@@ -1,6 +1,6 @@
 from __future__ import print_function
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import argparse
 import torch
 import torch.backends.cudnn as cudnn
@@ -9,7 +9,7 @@ from data import cfg_mnet, cfg_re50, cfg_gnet, cfg_mnetv3
 from layers.functions.prior_box import PriorBox
 from utils.nms.py_cpu_nms import py_cpu_nms
 import cv2
-from models.retinaface import RetinaFace
+# from models.retinaface import RetinaFace
 from utils.box_utils import decode, decode_landm
 from utils.timer import Timer
 
@@ -66,19 +66,37 @@ def load_model(model, pretrained_path, load_to_cpu):
     model.load_state_dict(pretrained_dict, strict=False)
     return model
 
+# added by clx @20240820 --------------------------------------------------
+def find_images(root_path):
+    images = []
+    for root, dirs, files in os.walk(root_path):
+        for file in files:
+            if file[-4:] == '.jpg':
+                image_path = os.path.join(root, file)
+                images.append(image_path.split(root_path)[1])
+                
+    return images
+# -------------------------------------------------------------------------
+
 
 if __name__ == '__main__':
     torch.set_grad_enabled(False)
 
     cfg = None
     if args.network == "mobile0.25":
+        from models.retinaface_m import RetinaFace
         cfg = cfg_mnet
     elif args.network == "resnet50":
+        from models.retinaface_m import RetinaFace
         cfg = cfg_re50
-    elif args.network == "mobilev3":
-        cfg = cfg_mnetv3
     elif args.network == "ghostnet":
+        from models.retinaface_g import RetinaFace
         cfg = cfg_gnet
+    elif args.network == "mobilev3":
+        from models.retinaface_g import RetinaFace
+        cfg = cfg_mnetv3
+
+
     # net and model
     net = RetinaFace(cfg=cfg, phase='test')
     net = load_model(net, args.trained_model, args.cpu)
@@ -91,10 +109,18 @@ if __name__ == '__main__':
 
     # testing dataset
     testset_folder = args.dataset_folder
-    testset_list = args.dataset_folder[:-7] + "wider_val.txt"
 
-    with open(testset_list, 'r') as fr:
-        test_dataset = fr.read().split()
+    # original ---------------------------------------------------
+    # testset_list = args.dataset_folder[:-7] + "wider_val.txt"
+
+    # with open(testset_list, 'r') as fr:
+    #     test_dataset = fr.read().split()
+    # ------------------------------------------------------------
+    # clx ----------------------------------------------------------------------
+    # test_dataset = [x for x in os.listdir(args.dataset_folder) if x[-4:] in ['jpg', 'png']]
+    test_dataset = find_images(args.dataset_folder)
+    # --------------------------------------------------------------------------
+
     num_images = len(test_dataset)
 
     _t = {'forward_pass': Timer(), 'misc': Timer()}
@@ -141,9 +167,16 @@ if __name__ == '__main__':
         boxes = boxes.cpu().numpy()
         scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
         landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
+
+        # original ------------------------------------------------------------------------
+        # scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
+        #                        img.shape[3], img.shape[2], img.shape[3], img.shape[2],
+        #                        img.shape[3], img.shape[2]])
+        # clx -----------------------------------------------------------------------------
         scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                               img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                               img.shape[3], img.shape[2]])
+                               img.shape[3], img.shape[2], img.shape[3], img.shape[2],])
+        # ---------------------------------------------------------------------------------
+
         scale1 = scale1.to(device)
         landms = landms * scale1 / resize
         landms = landms.cpu().numpy()
@@ -206,20 +239,51 @@ if __name__ == '__main__':
                     continue
                 text = "{:.4f}".format(b[4])
                 b = list(map(int, b))
-                cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
+                # cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
                 cx = b[0]
                 cy = b[1] + 12
                 cv2.putText(img_raw, text, (cx, cy),
                             cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
                 # landms
-                cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
-                cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
-                cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
-                cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
-                cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
+                # cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
+                # cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
+                # cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
+                # cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
+                # cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
+
+                print()
+                print('img_name = ', img_name)
+                print('b = ', b)
+                print()
+                print('p1_x, p1_y = ', b[5], b[6])
+                print('p2_x, p2_y = ', b[7], b[8])
+                print('p3_x, p3_y = ', b[9], b[10])
+                print('p4_x, p4_y = ', b[11], b[12])
+                print()
+                exit()
+
+
+                cv2.circle(img_raw, (b[5], b[6]), 2, (0, 0, 255), -1)
+                cv2.circle(img_raw, (b[7], b[8]), 2, (0, 255, 255), -1)
+                cv2.circle(img_raw, (b[9], b[10]), 2, (255, 0, 255), -1)
+                cv2.circle(img_raw, (b[11], b[12]), 2, (0, 255, 0), -1)
+
             # save image
-            if not os.path.exists("./results/"):
-                os.makedirs("./results/")
-            name = "./results/" + str(i) + ".jpg"
-            cv2.imwrite(name, img_raw)
+            # original -------------------------------------------------------
+            # if not os.path.exists("./results/"):
+            #     os.makedirs("./results/")
+            # name = "./results/" + str(i) + ".jpg"
+            # cv2.imwrite(name, img_raw)
+
+            # clx ------------------------------------------------------------
+            # vis_save_root = args.trained_model[:args.trained_model.rfind('/')+1] + 'vis_results_without_box/'
+            vis_save_root = args.save_folder[:args.save_folder[:-1].rfind('/')+1] + f'{args.network}_vis_results/'
+            name = vis_save_root + img_name
+            save_vis_dirname = os.path.dirname(name)
+            os.makedirs(save_vis_dirname, exist_ok=True)
+
+            if len(dets):
+                cv2.imwrite(name, img_raw)
+            # ----------------------------------------------------------------
+            # cv2.imwrite(name, img_raw)

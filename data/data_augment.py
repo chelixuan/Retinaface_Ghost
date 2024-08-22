@@ -41,7 +41,10 @@ def _crop(image, boxes, labels, landm, img_dim):
         boxes_t = boxes[mask_a].copy()
         labels_t = labels[mask_a].copy()
         landms_t = landm[mask_a].copy()
-        landms_t = landms_t.reshape([-1, 5, 2])
+        # landms_t = landms_t.reshape([-1, 5, 2])
+        # clx ---------------------------------------
+        landms_t = landms_t.reshape([-1, 4, 2])
+        # -------------------------------------------
 
         if boxes_t.shape[0] == 0:
             continue
@@ -57,7 +60,10 @@ def _crop(image, boxes, labels, landm, img_dim):
         landms_t[:, :, :2] = landms_t[:, :, :2] - roi[:2]
         landms_t[:, :, :2] = np.maximum(landms_t[:, :, :2], np.array([0, 0]))
         landms_t[:, :, :2] = np.minimum(landms_t[:, :, :2], roi[2:] - roi[:2])
-        landms_t = landms_t.reshape([-1, 10])
+        # landms_t = landms_t.reshape([-1, 10])
+        # clx ---------------------------------------
+        landms_t = landms_t.reshape([-1, 8])
+        # -------------------------------------------
 
 
 	# make sure that the cropped image contains at least one face > 16 pixel at training image scale
@@ -172,16 +178,29 @@ def _mirror(image, boxes, landms):
         boxes[:, 0::2] = width - boxes[:, 2::-2]
 
         # landm
+        # landms = landms.copy()
+        # landms = landms.reshape([-1, 5, 2])
+        # landms[:, :, 0] = width - landms[:, :, 0]
+        # tmp = landms[:, 1, :].copy()
+        # landms[:, 1, :] = landms[:, 0, :]
+        # landms[:, 0, :] = tmp
+        # tmp1 = landms[:, 4, :].copy()
+        # landms[:, 4, :] = landms[:, 3, :]
+        # landms[:, 3, :] = tmp1
+        # landms = landms.reshape([-1, 10])
+
+        # clx --------------------------------------------------------------
         landms = landms.copy()
-        landms = landms.reshape([-1, 5, 2])
+        landms = landms.reshape([-1, 4, 2])
         landms[:, :, 0] = width - landms[:, :, 0]
         tmp = landms[:, 1, :].copy()
         landms[:, 1, :] = landms[:, 0, :]
         landms[:, 0, :] = tmp
-        tmp1 = landms[:, 4, :].copy()
-        landms[:, 4, :] = landms[:, 3, :]
-        landms[:, 3, :] = tmp1
-        landms = landms.reshape([-1, 10])
+        tmp1 = landms[:, 3, :].copy()
+        landms[:, 3, :] = landms[:, 2, :]
+        landms[:, 2, :] = tmp1
+        landms = landms.reshape([-1, 8])
+        # ------------------------------------------------------------------
 
     return image, boxes, landms
 

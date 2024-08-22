@@ -1,6 +1,6 @@
 from __future__ import print_function
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import torch
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
@@ -63,7 +63,7 @@ save_folder = args.save_folder
 
 net = RetinaFace(cfg=cfg)
 print("Printing net...")
-# print(net)
+print(net)
 
 if args.resume_net is not None:
     print('Loading resume network...')
@@ -118,8 +118,10 @@ def train():
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:
             # create batch iterator
-            batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers,
-                                                  collate_fn=detection_collate, drop_last=True))
+            # batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers,
+            #                                       collate_fn=detection_collate, drop_last=True))
+            batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers, 
+                                                  collate_fn=detection_collate))
             if (epoch % 10 == 0 and epoch > 0) or (epoch % 5 == 0 and epoch > cfg['decay1']):
                 torch.save(net.state_dict(), save_folder + cfg['name'] + '_epoch_' + str(epoch) + '.pth')
             epoch += 1
@@ -132,8 +134,9 @@ def train():
         # load train data
         images, targets = next(batch_iterator)
         images = images.cuda()
-        # targets = torch.tensor(targets, dtype=torch.long)
         targets = [anno.cuda() for anno in targets]
+
+        # targets = torch.tensor(targets, dtype=torch.long)
 
 
         # forward

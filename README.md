@@ -1,40 +1,12 @@
-English |  [简体中文](https://github.com/pengtougu/Retinaface_Ghost/blob/master/README_CH.md)
+[原始代码](https://github.com/ppogg/Retinaface_Ghost)
 
-# RetinaFace in PyTorch
-
-### Chinese detailed blog：https://zhuanlan.zhihu.com/p/379730820
-
-<img src="https://pic1.zhimg.com/80/v2-84f20d3419063adf10bc001f8ae92a1c_720w.jpg" width="600" alt="stream"/><br/>
-
-### Face recognition with masks is still robust-----------------------------------
-
-## Version Run Library Test of pytorch_retinaface
-
-How well retinaface works can only be verified by comparison experiments. Here we test the pytorch_retinaface version, which is the one with the highest star among all versions in the community.
-
-#### Data set preparation
-This address contains the clean Wideface dataset：[https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)
-
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210609195709924.png)
-
-The downloaded dataset contains a total of these three.
-
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210609200347763.png)
-
-At this point the folder is image only, however the author requires the data in the format of:
-
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210609200458806.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NTgyOTQ2Mg==,size_16,color_FFFFFF,t_70)
-
-So we are still missing the index file for the data, and this is the time to use the script provided by the author`wider_val.py`. Export the image information to a txt file, the full format of the export is as follows.
-
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210609200838123.png)
-
-Each dataset has a txt file containing the sample information. The content of the txt file is roughly like this (take train.txt as an example), containing image information and face location information.
+### 在原始 Retinaface_Ghost 上的修改：
+ - 将代码 landmarks 数量从 5 个修改为 4 个
+### 相同 backbone（mobile0.25）默认参数训练，与 [biubug6/Pytorch_Retinaface](https://github.com/biubug6/Pytorch_Retinaface) 结果差异：
 ```
-# 0--Parade/0_Parade_marchingband_1_849.jpg
-449 330 122 149 488.906 373.643 0.0 542.089 376.442 0.0 515.031 412.83 0.0 485.174 425.893 0.0 538.357 431.491 0.0 0.82
-# 0--Parade/0_Parade_Parade_0_904.jpg
-361 98 263 339 424.143 251.656 0.0 547.134 232.571 0.0 494.121 325.875 0.0 453.83 368.286 0.0 561.978 342.839 0.0 0.89
+相同图片 4 个 landmarks 在图片中只出现两个：
+ - Retinaface_Ghost 未在图片中出现的两个点的坐标会出现越界情况，即坐标值小于0或大于图片尺度；
+ - Pytorch_Retinaface 未出现的两个点的坐标会往图片尺度上移动，即产生错误的预测；
 ```
 
 #### Model Training

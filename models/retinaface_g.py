@@ -33,17 +33,29 @@ class BboxHead(nn.Module):
         return out.view(out.shape[0], -1, 4)
 
 
+# class LandmarkHead(nn.Module):
+#     def __init__(self, inchannels=512, num_anchors=3):
+#         super(LandmarkHead, self).__init__()
+#         self.conv1x1 = nn.Conv2d(inchannels, num_anchors * 10, kernel_size=(1, 1), stride=1, padding=0)
+
+#     def forward(self, x):
+#         out = self.conv1x1(x)
+#         out = out.permute(0, 2, 3, 1).contiguous()
+
+#         return out.view(out.shape[0], -1, 10)
+
+# clx for QR_code recognition -------------------------------------------------------------------------
 class LandmarkHead(nn.Module):
-    def __init__(self, inchannels=512, num_anchors=3):
-        super(LandmarkHead, self).__init__()
-        self.conv1x1 = nn.Conv2d(inchannels, num_anchors * 10, kernel_size=(1, 1), stride=1, padding=0)
+    def __init__(self,inchannels=512,num_anchors=3):
+        super(LandmarkHead,self).__init__()
+        self.conv1x1 = nn.Conv2d(inchannels, num_anchors * 8, kernel_size=(1,1), stride=1, padding=0)
 
-    def forward(self, x):
+    def forward(self,x):
         out = self.conv1x1(x)
-        out = out.permute(0, 2, 3, 1).contiguous()
+        out = out.permute(0,2,3,1).contiguous()
 
-        return out.view(out.shape[0], -1, 10)
-
+        return out.view(out.shape[0], -1, 8)
+# -----------------------------------------------------------------------------------------------------
 
 class RetinaFace(nn.Module):
     def __init__(self, cfg=None, phase='train'):
