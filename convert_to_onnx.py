@@ -1,7 +1,7 @@
 from __future__ import print_function
 import argparse
 import torch
-from data import cfg_mnet, cfg_re50
+from data import cfg_mnet, cfg_re50, cfg_gnet, cfg_mnetv3
 from models.retinaface_g import RetinaFace
 
 
@@ -9,8 +9,10 @@ parser = argparse.ArgumentParser(description='Test')
 parser.add_argument('-m', '--trained_model', default='./weights/mobilenet0.25_Final.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='mobile0.25', help='Backbone network mobile0.25 or resnet50')
-parser.add_argument('--long_side', default=640, help='when origin_size is false, long_side is scaled size(320 or 640 for long side)')
+parser.add_argument('--long_side', default=1280, type=int, help='when origin_size is false, long_side is scaled size(320 or 640 for long side)')
+parser.add_argument('--short_side', default=720, type=int, help='when origin_size is false, short_side is scaled size(320 or 640 for long side)')
 parser.add_argument('--cpu', action="store_true", default=True, help='Use cpu inference')
+parser.add_argument('--opset', default=11, help='onnx opset version')
 
 args = parser.parse_args()
 
@@ -55,9 +57,17 @@ if __name__ == '__main__':
     torch.set_grad_enabled(False)
     cfg = None
     if args.network == "mobile0.25":
+        from models.retinaface_m import RetinaFace
         cfg = cfg_mnet
     elif args.network == "resnet50":
+        from models.retinaface_m import RetinaFace
         cfg = cfg_re50
+    elif args.network == "ghostnet":
+        from models.retinaface_g import RetinaFace
+        cfg = cfg_gnet
+    elif args.network == "mobilev3":
+        from models.retinaface_g import RetinaFace
+        cfg = cfg_mnetv3
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
     net = load_model(net, args.trained_model, args.cpu)
@@ -68,13 +78,32 @@ if __name__ == '__main__':
     net = net.to(device)
 
     # ------------------------ export -----------------------------
-    output_onnx = 'FaceDetector.onnx'
-    print("==> Exporting model to ONNX format at '{}'".format(output_onnx))
-    input_names = ["input0"]
-    output_names = ["output0"]
-    inputs = torch.randn(1, 3, args.long_side, args.long_side).to(device)
+    # output_onnx = 'FaceDetector.onnx'
+    # print("==> Exporting model to ONNX format at '{}'".format(output_onnx))
+    # input_names = ["input0"]
+    # output_names = ["output0"]
+    # inputs = torch.randn(1, 3, args.long_side, args.long_side).to(device)
 
-    torch_out = torch.onnx._export(net, inputs, output_onnx, export_params=True, verbose=False,
-                                   input_names=input_names, output_names=output_names)
+    # torch_out = torch.onnx._export(net, inputs, output_onnx, export_params=True, verbose=False,
+    #                                input_names=input_names, output_names=output_names)
+    
+    # clx -----------------------------
+    output_onnx = args.trained_model[:args.trained_model.rfind('.')] + '.onnx' 
+    print("==> Exporting model to ONNX format at '{}'".format(output_onnx))
+    input_names = ["image"]
+    output_names = ["box", "class", "landm"]
+    inputs = torch.randn(1, 3, args.short_side, args.long_side, dtype=None).to(device)
+    # inputs = torch.zeros(1, 3, args.short_side, args.long_side).to(device)
+
+    torch.onnx.export(
+        net,
+        inputs,
+        output_onnx,
+        opset_version = args.opset,
+        input_names = input_names,
+        output_names = output_names
+    )
+
+    print('\nonnx export done ! \n')
 
 
