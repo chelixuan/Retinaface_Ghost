@@ -1,5 +1,6 @@
-[原始代码](https://github.com/ppogg/Retinaface_Ghost)
+[原始Retinaface_Ghost代码](https://github.com/ppogg/Retinaface_Ghost)
 
+# 自己的修改
 ### 在原始 Retinaface_Ghost 上的修改：
  - 将代码 landmarks 数量从 5 个修改为 4 个
 ### 相同 backbone（mobile0.25）默认参数训练，与 [biubug6/Pytorch_Retinaface](https://github.com/biubug6/Pytorch_Retinaface) 结果差异：
@@ -9,6 +10,7 @@
  - Pytorch_Retinaface 未出现的两个点的坐标会往图片尺度上移动，即产生错误的预测；
 ```
 
+# 模型训练 ------------------------------------------------------------------
 #### Model Training
 
 ```
